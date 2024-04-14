@@ -1,0 +1,78 @@
+overrides.yaml
+==============
+proxy:
+  enabled: true
+  http:
+    enabled: true
+    servicePort: 80
+    containerPort: 8000
+  tls:
+    #enabled: true
+    overrideServiceTargetPort: 8000
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:ap-south-1:123456789:certificate/111111111111111111111111"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+env:
+  trusted_ips: "0.0.0.0/0,::/0"
+  
+  
+helm install kong kong/kong   --atomic   -n kong --create-namespace   -f overrides.yaml (Direct installation not recommended)**
+
+Imp:
+1. The --atomic flag in Helm ensures that either the entire installation of your chart is successful, 
+or if any errors occur during the installation process, Helm will roll back the changes,
+ leaving your cluster in the state it was before the installation attempt began.
+2. The overrides.yaml file is used to provide custom configuration values or overrides 
+for the Helm chart you're installing. It allows you to tailor the installation to your specific 
+requirements by specifying values that differ from the default values provided by the Helm chart.
+ 
+===
+**
+helm template kong kong/kong   --atomic   -n kong --create-namespace   -f overrides.yaml > final-ingress-controller.yaml
+Now convert the kind deployement to deamonset for HA of the kong ingress pods in the final-ingress-controller.yaml
+k apply -f final-ingress-controller.yaml -n kong --create-namespace
+===
+
+ 
+test-ingress.yaml
+=================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: simple-ingress-new
+  namespace: default
+  annotations:
+    konghq.com/https-redirect-status-code: "301"
+    #konghq.com/preserve-host: "false"
+    #nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    #nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    #nginx.ingress.kubernetes.io/rewrite-target: /
+    #nginx.ingress.kubernetes.io/secure-backends: "true"
+spec:
+  ingressClassName: kong
+  rules:
+    - host: testr.random.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: just-nginx-test-nginx
+                port:
+                  number: 80
+				  
+============================
+
+
+
+Remove the section marked:
+
+k edit svc kong-kong-proxy -n kong
+
+Remove 80 port part form the ports I.e., kong-proxy
+
+Now you will be only accessing the https part and http will be disabled.
+
