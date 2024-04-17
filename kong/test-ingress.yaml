@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: simple-ingress-new
+  namespace: default
+  annotations:
+    konghq.com/https-redirect-status-code: "301"
+    ingress.kubernetes.io/force-ssl-redirect: "true"
+    #konghq.com/preserve-host: "false"
+    #nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    #nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    #nginx.ingress.kubernetes.io/rewrite-target: /
+    #nginx.ingress.kubernetes.io/secure-backends: "true"
+spec:
+  ingressClassName: kong
+  rules:
+    - host: testr.illusto.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: just-nginx-test-nginx
+                port:
+                  number: 80
